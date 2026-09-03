@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capacity Connect — Course Details</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="course-details">
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">📚</div>
+          <span>Capacity Connect</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="trainee-dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="courses.html"><span class="nav-icon">📖</span> Courses</a>
+        <a href="trainee-dashboard.html#myLearning"><span class="nav-icon">🎓</span> My Learning</a>
+        <a href="trainee-dashboard.html#assessments"><span class="nav-icon">📝</span> Assessments</a>
+        <a href="trainee-dashboard.html#results"><span class="nav-icon">📊</span> Results</a>
+        <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="topbar">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <h1>Course Details</h1>
+        <div class="user-info">
+          <div class="user-avatar">T</div>
+          <span id="userName">Trainee</span>
+        </div>
+      </div>
+
+      <div id="courseContent">
+        <!-- Course header -->
+        <div class="course-header">
+          <h1 id="courseTitle">Loading...</h1>
+          <p id="courseDescription"></p>
+          <div class="course-info-grid">
+            <div class="course-info-item">
+              <span class="label">Trainer</span>
+              <span class="value" id="courseTrainer">—</span>
+            </div>
+            <div class="course-info-item">
+              <span class="label">Difficulty</span>
+              <span class="value" id="courseDifficulty">—</span>
+            </div>
+            <div class="course-info-item">
+              <span class="label">Duration</span>
+              <span class="value" id="courseDuration">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enroll button (shown if not enrolled) -->
+        <div class="section" id="enrollBtn" style="display:none;">
+          <p style="margin-bottom:1rem;">You are not enrolled in this course yet. Click below to start learning.</p>
+          <button class="btn btn-primary" onclick="enrollAndReload()">Enroll Now</button>
+        </div>
+
+        <!-- Lessons section -->
+        <div class="section" id="lessonsSection">
+          <div class="section-header">
+            <h2>Learning Materials</h2>
+          </div>
+
+          <!-- Progress bar -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+              <span style="font-weight:600;font-size:0.875rem;">Your Progress</span>
+              <span id="progressText" style="font-weight:700;color:var(--primary-700);">0%</span>
+            </div>
+            <div class="progress-bar progress-bar-large">
+              <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div id="lessonsList" style="margin-top:1.5rem;"></div>
+        </div>
+
+        <!-- Assessment section -->
+        <div class="section" id="assessmentSection" style="display:none;">
+          <h3>Assessment</h3>
+          <p>Test your knowledge.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+    function enrollAndReload() {
+      const user = getCurrentUser();
+      const courseId = new URLSearchParams(window.location.search).get('id');
+      if (user && courseId) {
+        enrollUser(user.id, courseId);
+        window.location.reload();
+      }
+    }
+  </script>
+</body>
+</html>

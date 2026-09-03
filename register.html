@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capacity Connect — Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="register" class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">📚</div>
+      <h1>CAPACITY CONNECT</h1>
+      <p>Create your account</p>
+    </div>
+
+    <form class="auth-form" id="registerForm">
+      <div id="registerError" class="auth-error"></div>
+      <div id="registerSuccess" class="auth-success"></div>
+
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <div class="input-group">
+          <input type="text" id="fullName" placeholder="John Doe" required autofocus>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-group">
+          <input type="email" id="email" placeholder="you@example.com" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-group">
+          <input type="password" id="password" placeholder="At least 6 characters" required>
+          <button type="button" class="toggle-btn" id="togglePassword">👁</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="input-group">
+          <input type="password" id="confirmPassword" placeholder="Re-enter password" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Select Role</label>
+        <select id="role" required>
+          <option value="">Choose a role...</option>
+          <option value="trainee">Trainee</option>
+          <option value="trainer">Trainer</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Register</button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="login.html">Login here</a>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

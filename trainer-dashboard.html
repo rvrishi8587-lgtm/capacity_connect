@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capacity Connect — Trainer Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="trainer-dashboard">
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">📚</div>
+          <span>Capacity Connect</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="trainer-dashboard.html" class="active"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="trainer-dashboard.html#myCourses"><span class="nav-icon">📖</span> My Courses</a>
+        <a href="trainer-dashboard.html#createCourse"><span class="nav-icon">➕</span> Create Course</a>
+        <a href="trainer-dashboard.html#createAssessment"><span class="nav-icon">📝</span> Create Assessment</a>
+        <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="topbar">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <h1>Trainer Dashboard</h1>
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">T</div>
+          <span id="userName">Trainer</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">📖</div>
+          <div class="stat-value" id="statMyCourses">0</div>
+          <div class="stat-label">My Courses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">👥</div>
+          <div class="stat-value" id="statStudents">0</div>
+          <div class="stat-label">Total Students</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">📝</div>
+          <div class="stat-value" id="statAssessments">0</div>
+          <div class="stat-label">Assessments Created</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon cyan">📊</div>
+          <div class="stat-value" id="statAvgScore">0%</div>
+          <div class="stat-label">Avg Student Score</div>
+        </div>
+      </div>
+
+      <!-- Create Course -->
+      <div class="section" id="createCourse">
+        <div class="section-header">
+          <h2>Create New Course</h2>
+        </div>
+        <form class="dashboard-form" id="createCourseForm">
+          <div class="form-group">
+            <label for="courseTitle">Course Title</label>
+            <input type="text" id="courseTitle" placeholder="e.g. Introduction to AI" required>
+          </div>
+          <div class="form-group">
+            <label for="courseDescription">Description</label>
+            <textarea id="courseDescription" placeholder="Brief course description" required></textarea>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="courseSubject">Subject</label>
+              <input type="text" id="courseSubject" placeholder="e.g. Programming" required>
+            </div>
+            <div class="form-group">
+              <label for="courseDifficulty">Difficulty</label>
+              <select id="courseDifficulty" required>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="courseDuration">Duration</label>
+            <input type="text" id="courseDuration" placeholder="e.g. 4 weeks" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Create Course</button>
+        </form>
+      </div>
+
+      <!-- My Courses -->
+      <div class="section" id="myCourses">
+        <div class="section-header">
+          <h2>My Courses</h2>
+        </div>
+        <div class="courses-grid" id="trainerCourses"></div>
+      </div>
+
+      <!-- Create MCQ Assessment -->
+      <div class="section" id="createAssessment">
+        <div class="section-header">
+          <h2>Add MCQ Question</h2>
+        </div>
+        <form class="dashboard-form" id="createMcqForm">
+          <div class="form-group">
+            <label for="mcqCourse">Select Course</label>
+            <select id="mcqCourse" required></select>
+          </div>
+          <div class="form-group">
+            <label for="mcqQuestion">Question</label>
+            <textarea id="mcqQuestion" placeholder="Enter your question" required></textarea>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="mcqOpt1">Option 1</label>
+              <input type="text" id="mcqOpt1" placeholder="First option" required>
+            </div>
+            <div class="form-group">
+              <label for="mcqOpt2">Option 2</label>
+              <input type="text" id="mcqOpt2" placeholder="Second option" required>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="mcqOpt3">Option 3</label>
+              <input type="text" id="mcqOpt3" placeholder="Third option" required>
+            </div>
+            <div class="form-group">
+              <label for="mcqOpt4">Option 4</label>
+              <input type="text" id="mcqOpt4" placeholder="Fourth option" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="mcqCorrect">Correct Answer</label>
+            <select id="mcqCorrect" required>
+              <option value="0">Option 1</option>
+              <option value="1">Option 2</option>
+              <option value="2">Option 3</option>
+              <option value="3">Option 4</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Question</button>
+        </form>
+      </div>
+
+      <!-- Existing Questions -->
+      <div class="section">
+        <div class="section-header">
+          <h2>My MCQ Questions</h2>
+        </div>
+        <div id="trainerQuestions"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

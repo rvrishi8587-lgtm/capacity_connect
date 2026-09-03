@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capacity Connect — Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="admin-dashboard">
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">📚</div>
+          <span>Capacity Connect</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin-dashboard.html" class="active"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="admin-dashboard.html#users"><span class="nav-icon">👥</span> Users</a>
+        <a href="admin-dashboard.html#courses"><span class="nav-icon">📖</span> Courses</a>
+        <a href="admin-dashboard.html#analytics"><span class="nav-icon">📊</span> Analytics</a>
+        <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="topbar">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <h1>Admin Dashboard</h1>
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span id="userName">Admin</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div class="stat-value" id="statTotalUsers">0</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">🎓</div>
+          <div class="stat-value" id="statTrainees">0</div>
+          <div class="stat-label">Total Trainees</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">👨‍🏫</div>
+          <div class="stat-value" id="statTrainers">0</div>
+          <div class="stat-label">Total Trainers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon cyan">📖</div>
+          <div class="stat-value" id="statCourses">0</div>
+          <div class="stat-label">Total Courses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">📝</div>
+          <div class="stat-value" id="statEnrollments">0</div>
+          <div class="stat-label">Total Enrollments</div>
+        </div>
+      </div>
+
+      <!-- User Management -->
+      <div class="section" id="users">
+        <div class="section-header">
+          <h2>User Management</h2>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- All Courses -->
+      <div class="section" id="courses">
+        <div class="section-header">
+          <h2>All Courses on Platform</h2>
+        </div>
+        <div class="courses-grid" id="allCoursesList"></div>
+      </div>
+
+      <!-- Analytics -->
+      <div class="section" id="analytics">
+        <div class="section-header">
+          <h2>Platform Analytics</h2>
+        </div>
+        <div id="analyticsContent"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getCurrentUser();
+      if (!user) return;
+      // Render all courses
+      const coursesContainer = document.getElementById('allCoursesList');
+      const courses = getCourses();
+      if (courses.length === 0) {
+        coursesContainer.innerHTML = '<p class="empty-state">No courses on the platform yet.</p>';
+      } else {
+        coursesContainer.innerHTML = courses.map(c => `
+          <div class="course-card">
+            <div class="course-icon">${c.icon || '📘'}</div>
+            <h3>${escapeHtml(c.title)}</h3>
+            <p class="course-desc">${escapeHtml(c.description)}</p>
+            <div class="course-meta">
+              <span class="badge ${difficultyClass(c.difficulty)}">${c.difficulty}</span>
+              <span class="badge badge-neutral">${escapeHtml(c.trainerName)}</span>
+            </div>
+            <div class="course-stats">
+              <span>👥 ${getEnrollments().filter(e => e.courseId === c.id).length} enrolled</span>
+              <span>❓ ${getQuestionsByCourse(c.id).length} questions</span>
+            </div>
+          </div>`).join('');
+      }
+      // Analytics
+      const analyticsContainer = document.getElementById('analyticsContent');
+      const enrollments = getEnrollments();
+      const results = getResults();
+      const avgScore = results.length > 0 ? Math.round(results.reduce((s, r) => s + r.percentage, 0) / results.length) : 0;
+      const totalQuestions = getQuestions().length;
+      const totalAssessmentsTaken = results.length;
+      analyticsContainer.innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">📝</div>
+            <div class="stat-value">${totalQuestions}</div>
+            <div class="stat-label">Total MCQ Questions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-value">${totalAssessmentsTaken}</div>
+            <div class="stat-label">Assessments Taken</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber">📊</div>
+            <div class="stat-value">${avgScore}%</div>
+            <div class="stat-label">Platform Avg Score</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon cyan">📚</div>
+            <div class="stat-value">${enrollments.length}</div>
+            <div class="stat-label">Total Enrollments</div>
+          </div>
+        </div>`;
+    });
+  </script>
+</body>
+</html>
