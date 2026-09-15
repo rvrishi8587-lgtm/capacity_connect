@@ -21,6 +21,8 @@
         <a href="trainer-dashboard.html#myCourses"><span class="nav-icon">📖</span> My Courses</a>
         <a href="trainer-dashboard.html#createCourse"><span class="nav-icon">➕</span> Create Course</a>
         <a href="trainer-dashboard.html#createAssessment"><span class="nav-icon">📝</span> Create Assessment</a>
+        <a href="trainer-dashboard.html#trainerOpportunities"><span class="nav-icon">🎯</span> Trainer Opportunities</a>
+        <a href="trainer-dashboard.html#myApplications"><span class="nav-icon">📋</span> My Applications</a>
         <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
       </nav>
     </aside>
@@ -30,7 +32,7 @@
       <div class="topbar">
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
         <h1>Trainer Dashboard</h1>
-        <div class="user-info">
+        <div class="user-info"><button class="notification-bell" onclick="document.getElementById('trainerNotificationsPanel').classList.toggle('show')">🔔 <span id="notificationCount" class="notification-count">0</span></button><div class="notification-panel" id="trainerNotificationsPanel"><div class="notification-panel-head">Notifications</div><div id="trainerNotifications"></div></div>
           <div class="user-avatar" id="userAvatar">T</div>
           <span id="userName">Trainer</span>
         </div>
@@ -58,6 +60,16 @@
           <div class="stat-value" id="statAvgScore">0%</div>
           <div class="stat-label">Avg Student Score</div>
         </div>
+      </div>
+
+      <!-- Trainer Hiring -->
+      <div class="section" id="trainerOpportunities">
+        <div class="section-header"><div><h2>Trainer Opportunities</h2><p class="section-subtitle">Explore requirements posted by the Admin and apply to suitable assignments.</p></div></div>
+        <div id="trainerRequirementsList"></div>
+      </div>
+      <div class="section" id="myApplications">
+        <div class="section-header"><div><h2>My Applications</h2><p class="section-subtitle">Track your trainer hiring applications and decisions.</p></div><div class="mini-stat">Applications <strong id="statTrainerApplications">0</strong></div></div>
+        <div id="trainerApplicationsList"></div>
       </div>
 
       <!-- Create Course -->

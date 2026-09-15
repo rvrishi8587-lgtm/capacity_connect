@@ -20,6 +20,7 @@
         <a href="admin-dashboard.html" class="active"><span class="nav-icon">🏠</span> Dashboard</a>
         <a href="admin-dashboard.html#users"><span class="nav-icon">👥</span> Users</a>
         <a href="admin-dashboard.html#courses"><span class="nav-icon">📖</span> Courses</a>
+        <a href="admin-dashboard.html#trainerRequirements"><span class="nav-icon">👨‍🏫</span> Trainer Requirements</a>
         <a href="admin-dashboard.html#analytics"><span class="nav-icon">📊</span> Analytics</a>
         <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
       </nav>
@@ -30,7 +31,7 @@
       <div class="topbar">
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
         <h1>Admin Dashboard</h1>
-        <div class="user-info">
+        <div class="user-info"><button class="notification-bell" onclick="document.getElementById('adminNotificationsPanel').classList.toggle('show')">🔔 <span id="notificationCount" class="notification-count">0</span></button><div class="notification-panel" id="adminNotificationsPanel"><div class="notification-panel-head">Notifications</div><div id="adminNotifications"></div></div>
           <div class="user-avatar">A</div>
           <span id="userName">Admin</span>
         </div>
@@ -63,6 +64,24 @@
           <div class="stat-value" id="statEnrollments">0</div>
           <div class="stat-label">Total Enrollments</div>
         </div>
+      </div>
+
+      <!-- Trainer Requirements -->
+      <div class="section" id="trainerRequirements">
+        <div class="section-header"><div><h2>Hire a Trainer / Trainer Requirements</h2><p class="section-subtitle">Create, manage and fill training requirements.</p></div></div>
+        <form class="dashboard-form hiring-form" id="trainerRequirementForm">
+          <div class="form-grid-2"><div class="form-group"><label>Requirement / Role Title</label><input id="reqTitle" placeholder="Python & Machine Learning Trainer" required></div><div class="form-group"><label>Training Topic / Course Name</label><input id="reqCourse" placeholder="Python & Machine Learning" required></div></div>
+          <div class="form-group"><label>Required Competencies / Skills</label><input id="reqSkills" placeholder="Python, Machine Learning, Data Science" required></div>
+          <div class="form-grid-2"><div class="form-group"><label>Required Qualification</label><input id="reqQualification" placeholder="B.Tech / MCA / M.Tech or relevant" required></div><div class="form-group"><label>Minimum Experience</label><input id="reqMinExperience" placeholder="2 years" required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Preferred Experience</label><input id="reqPreferredExperience" placeholder="3+ years preferred"></div><div class="form-group"><label>Number of Trainers Required</label><input id="reqTrainerCount" type="number" min="1" value="1" required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Training Duration</label><input id="reqDuration" placeholder="4 weeks" required></div><div class="form-group"><label>Expected Start Date</label><input id="reqStartDate" type="date" required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Application Deadline</label><input id="reqDeadline" type="date"></div><div></div></div>
+          <div class="form-group"><label>Description / Job Requirements</label><textarea id="reqDescription" placeholder="Describe the training assignment and responsibilities" required></textarea></div>
+          <div class="form-group"><label>Additional Requirements</label><textarea id="reqAdditional" placeholder="Location, delivery mode, language, etc."></textarea></div>
+          <button type="submit" class="btn btn-primary">Post Requirement</button>
+        </form>
+        <div class="section-header inner-section-header"><h3>Active Trainer Requirements</h3></div>
+        <div id="adminRequirementsList"></div>
       </div>
 
       <!-- User Management -->

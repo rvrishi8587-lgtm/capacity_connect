@@ -13,6 +13,9 @@ const KEYS = {
   PROGRESS: "cc_progress",
   QUESTIONS: "cc_questions",
   RESULTS: "cc_results",
+  REQUIREMENTS: "cc_trainer_requirements",
+  APPLICATIONS: "cc_trainer_applications",
+  NOTIFICATIONS: "cc_notifications",
 };
 
 /* ---------- Generic helpers ---------- */
@@ -174,6 +177,9 @@ function seedData() {
   if (!load(KEYS.ENROLLMENTS, null)) save(KEYS.ENROLLMENTS, []);
   if (!load(KEYS.PROGRESS, null)) save(KEYS.PROGRESS, {});
   if (!load(KEYS.RESULTS, null)) save(KEYS.RESULTS, []);
+  if (!load(KEYS.REQUIREMENTS, null)) save(KEYS.REQUIREMENTS, []);
+  if (!load(KEYS.APPLICATIONS, null)) save(KEYS.APPLICATIONS, []);
+  if (!load(KEYS.NOTIFICATIONS, null)) save(KEYS.NOTIFICATIONS, []);
 }
 
 /* ---------- Auth helpers ---------- */
@@ -211,6 +217,42 @@ function getEnrollments() { return load(KEYS.ENROLLMENTS, []); }
 function getProgress() { return load(KEYS.PROGRESS, {}); }
 function getQuestions() { return load(KEYS.QUESTIONS, []); }
 function getResults() { return load(KEYS.RESULTS, []); }
+function getRequirements() { return load(KEYS.REQUIREMENTS, []); }
+function getApplications() { return load(KEYS.APPLICATIONS, []); }
+function getNotifications() { return load(KEYS.NOTIFICATIONS, []); }
+function addNotification(userId, title, message, type = "info") {
+  const notifications = getNotifications();
+  notifications.unshift({ id: uid(), userId, title, message, type, read: false, createdAt: new Date().toISOString() });
+  save(KEYS.NOTIFICATIONS, notifications);
+}
+function markNotificationRead(id) {
+  const notifications = getNotifications();
+  const n = notifications.find(x => x.id === id);
+  if (n) { n.read = true; save(KEYS.NOTIFICATIONS, notifications); }
+}
+function normalizeList(value) {
+  return String(value || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+}
+function calculateMatchScore(requirement, application) {
+  const required = normalizeList(requirement.skills);
+  const candidate = normalizeList([application.skills, application.specialization, application.certifications].filter(Boolean).join(","));
+  let skillScore = required.length ? required.filter(skill => candidate.some(c => c === skill || c.includes(skill) || skill.includes(c))).length / required.length * 55 : 55;
+  const qualification = String(application.qualification || "").toLowerCase();
+  const reqQualification = String(requirement.qualification || "").toLowerCase();
+  const qualificationScore = reqQualification && qualification && (qualification.includes(reqQualification) || reqQualification.split(/[\/|,]/).some(q => q.trim() && qualification.includes(q.trim()))) ? 15 : 0;
+  const years = parseFloat(String(application.totalExperience || "0").replace(/[^0-9.]/g, "")) || 0;
+  const minYears = parseFloat(String(requirement.minExperience || "0").replace(/[^0-9.]/g, "")) || 0;
+  const expScore = minYears <= 0 ? 15 : Math.min(15, Math.round((years / minYears) * 15));
+  const relevant = parseFloat(String(application.relevantTrainingExperience || "0").replace(/[^0-9.]/g, "")) || 0;
+  const relevantScore = relevant > 0 ? Math.min(10, relevant * 2) : 0;
+  return Math.max(0, Math.min(100, Math.round(skillScore + qualificationScore + expScore + relevantScore + 5)));
+}
+function getApplicationsForRequirement(requirementId) {
+  return getApplications().filter(a => a.requirementId === requirementId);
+}
+function getUnreadNotifications(userId) {
+  return getNotifications().filter(n => n.userId === userId && !n.read);
+}
 
 /* ---------- Course helpers ---------- */
 function getCourseById(id) {
@@ -735,6 +777,106 @@ function initTrainerDashboard() {
   });
 
   populateMcqCourseDropdown(user);
+  initTrainerHiring(user);
+  refreshTrainerHiringStats(user);
+}
+
+function initTrainerHiring(user) {
+  const requirementsContainer = document.getElementById("trainerRequirementsList");
+  const applicationsContainer = document.getElementById("trainerApplicationsList");
+  const notificationContainer = document.getElementById("trainerNotifications");
+  if (!requirementsContainer || !applicationsContainer) return;
+  renderTrainerRequirements(user);
+  renderTrainerApplications(user);
+  renderNotifications(user, notificationContainer);
+  requirementsContainer.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-apply-requirement]");
+    if (!btn) return;
+    openTrainerApplicationModal(btn.dataset.applyRequirement, user);
+  });
+  applicationsContainer.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-view-application]");
+    if (!btn) return;
+    const a = getApplications().find(x => x.id === btn.dataset.viewApplication);
+    if (a) alert(`Application Details\\n\\nRole: ${a.requirementTitle}\\nStatus: ${a.status}\\nQualification: ${a.qualification}\\nExperience: ${a.totalExperience}\\nSkills: ${a.skills}\\nSummary: ${a.summary}`);
+  });
+}
+
+function renderTrainerRequirements(user) {
+  const container = document.getElementById("trainerRequirementsList");
+  if (!container) return;
+  const apps = getApplications().filter(a => a.trainerId === user.id);
+  const active = getRequirements().filter(r => r.status === "Active" && !apps.some(a => a.requirementId === r.id));
+  if (!active.length) { container.innerHTML = '<p class="empty-state">No new trainer opportunities are available right now.</p>'; return; }
+  container.innerHTML = active.map(r => `
+    <div class="hiring-card">
+      <div class="hiring-card-head"><div><span class="badge badge-success">${escapeHtml(r.status)}</span><h3>${escapeHtml(r.title)}</h3></div><span class="match-pill">${r.trainersRequired} trainer${r.trainersRequired > 1 ? "s" : ""} needed</span></div>
+      <p>${escapeHtml(r.description || "Training requirement")}</p>
+      <div class="hiring-meta"><span>🎯 ${escapeHtml(r.skills)}</span><span>🎓 ${escapeHtml(r.qualification)}</span><span>💼 ${escapeHtml(r.minExperience)}+ yrs</span><span>⏱ ${escapeHtml(r.duration)}</span><span>📅 ${escapeHtml(r.startDate)}</span></div>
+      <div class="hiring-actions"><button class="btn btn-primary" data-apply-requirement="${r.id}">View Details & Apply</button></div>
+    </div>`).join("");
+}
+
+function renderTrainerApplications(user) {
+  const container = document.getElementById("trainerApplicationsList");
+  if (!container) return;
+  const apps = getApplications().filter(a => a.trainerId === user.id);
+  if (!apps.length) { container.innerHTML = '<p class="empty-state">You have not applied to any trainer requirements yet.</p>'; return; }
+  container.innerHTML = apps.map(a => `
+    <div class="application-row">
+      <div><h3>${escapeHtml(a.requirementTitle)}</h3><p>Applied ${new Date(a.appliedAt).toLocaleDateString()} · ${escapeHtml(a.email)}</p></div>
+      <span class="status-badge status-${a.status.toLowerCase().replace(/ /g,'-')}">${escapeHtml(a.status)}</span>
+      <button class="btn btn-sm btn-secondary" data-view-application="${a.id}">View Submission</button>
+    </div>`).join("");
+}
+
+function openTrainerApplicationModal(requirementId, user) {
+  const r = getRequirements().find(x => x.id === requirementId);
+  if (!r) return;
+  const existing = getApplications().some(a => a.requirementId === requirementId && a.trainerId === user.id);
+  if (existing) { alert("You have already submitted an application for this requirement."); return; }
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = `<div class="modal-card modal-large"><div class="modal-head"><div><span class="badge badge-primary">Trainer Opportunity</span><h2>${escapeHtml(r.title)}</h2></div><button class="modal-close" aria-label="Close">×</button></div>
+    <div class="hiring-detail"><p>${escapeHtml(r.description || "")}</p><div class="hiring-meta"><span>🎯 ${escapeHtml(r.skills)}</span><span>🎓 ${escapeHtml(r.qualification)}</span><span>💼 ${escapeHtml(r.minExperience)}+ yrs</span><span>⏱ ${escapeHtml(r.duration)}</span><span>📅 ${escapeHtml(r.startDate)}</span></div></div>
+    <form id="trainerApplicationForm" class="dashboard-form"><div class="form-grid-2"><div class="form-group"><label>Full Name</label><input id="appName" value="${escapeHtml(user.name)}" required></div><div class="form-group"><label>Email</label><input id="appEmail" type="email" value="${escapeHtml(user.email)}" required></div></div>
+    <div class="form-grid-2"><div class="form-group"><label>Phone</label><input id="appPhone" required></div><div class="form-group"><label>Qualification</label><input id="appQualification" placeholder="B.Tech / MCA / M.Tech" required></div></div>
+    <div class="form-grid-2"><div class="form-group"><label>Specialization</label><input id="appSpecialization" required></div><div class="form-group"><label>Total Experience</label><input id="appExperience" placeholder="e.g. 4 years" required></div></div>
+    <div class="form-grid-2"><div class="form-group"><label>Relevant Training Experience</label><input id="appRelevant" placeholder="e.g. 3 years"></div><div class="form-group"><label>Certifications</label><input id="appCertifications" placeholder="Comma separated"></div></div>
+    <div class="form-group"><label>Skills / Competencies</label><input id="appSkills" placeholder="Python, Machine Learning, Data Science" required></div>
+    <div class="form-group"><label>Previous Organizations / Institutions</label><input id="appOrganizations"></div>
+    <div class="form-group"><label>Short Professional Summary</label><textarea id="appSummary" required></textarea></div>
+    <div class="form-grid-2"><div class="form-group"><label>Resume Upload</label><input id="appResume" type="file" accept=".pdf,.doc,.docx" required></div><div class="form-group"><label>Supporting Documents (optional)</label><input id="appDocs" type="file" multiple></div></div>
+    <div class="modal-actions"><button type="button" class="btn btn-secondary modal-cancel">Cancel</button><button type="submit" class="btn btn-primary">Submit Application</button></div></form></div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector(".modal-close").onclick = close; modal.querySelector(".modal-cancel").onclick = close;
+  modal.querySelector("form").onsubmit = (e) => {
+    e.preventDefault();
+    if (!confirm("Please confirm that the information and resume you provided are correct. Submit application?")) return;
+    const resume = document.getElementById("appResume").files[0];
+    const supporting = Array.from(document.getElementById("appDocs").files || []);
+    const buildApplication = (resumeData = "") => {
+      const app = { id: uid(), requirementId: r.id, requirementTitle: r.title, trainerId: user.id, name: document.getElementById("appName").value.trim(), email: document.getElementById("appEmail").value.trim(), phone: document.getElementById("appPhone").value.trim(), qualification: document.getElementById("appQualification").value.trim(), specialization: document.getElementById("appSpecialization").value.trim(), totalExperience: document.getElementById("appExperience").value.trim(), relevantTrainingExperience: document.getElementById("appRelevant").value.trim(), skills: document.getElementById("appSkills").value.trim(), certifications: document.getElementById("appCertifications").value.trim(), organizations: document.getElementById("appOrganizations").value.trim(), summary: document.getElementById("appSummary").value.trim(), resumeName: resume ? resume.name : "", resumeData, supportingDocuments: supporting.map(f => f.name), status: "Submitted", appliedAt: new Date().toISOString(), matchScore: 0 };
+      app.matchScore = calculateMatchScore(r, app);
+      const applications = getApplications(); applications.push(app); save(KEYS.APPLICATIONS, applications);
+      addNotification("u-admin", "New Trainer Application", `${app.name} has applied for the ${r.title} requirement.`, "application");
+      alert("Application Submitted Successfully"); close(); renderTrainerRequirements(user); renderTrainerApplications(user); refreshTrainerHiringStats(user); renderNotifications(user, document.getElementById("trainerNotifications"));
+    };
+    if (resume) { const reader = new FileReader(); reader.onload = () => buildApplication(reader.result); reader.readAsDataURL(resume); } else buildApplication();
+  };
+}
+
+function refreshTrainerHiringStats(user) {
+  const el = document.getElementById("statTrainerApplications"); if (el) el.textContent = getApplications().filter(a => a.trainerId === user.id).length;
+}
+
+function renderNotifications(user, container) {
+  if (!container) return;
+  const notifications = getNotifications().filter(n => n.userId === user.id).slice(0, 8);
+  const count = document.getElementById("notificationCount"); if (count) { const unread = notifications.filter(n => !n.read).length; count.textContent = unread; count.style.display = unread ? "inline-flex" : "none"; }
+  container.innerHTML = notifications.length ? notifications.map(n => `<div class="notification-item ${n.read ? "read" : "unread"}" data-notification="${n.id}"><strong>🔔 ${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p><small>${new Date(n.createdAt).toLocaleString()}</small></div>`).join("") : '<p class="empty-state">No notifications.</p>';
+  container.querySelectorAll("[data-notification]").forEach(x => x.onclick = () => { markNotificationRead(x.dataset.notification); renderNotifications(user, container); });
 }
 
 function populateMcqCourseDropdown(user) {
@@ -827,7 +969,53 @@ function initAdminDashboard() {
   document.getElementById("userName").textContent = user.name;
   refreshAdminStats();
   renderAdminUsers();
+  initAdminHiring(user);
 }
+
+function initAdminHiring(user) {
+  renderRequirementsAdmin(); renderNotifications(user, document.getElementById("adminNotifications"));
+  const form = document.getElementById("trainerRequirementForm");
+  if (form) form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const requirement = { id: uid(), title: document.getElementById("reqTitle").value.trim(), course: document.getElementById("reqCourse").value.trim(), skills: document.getElementById("reqSkills").value.trim(), qualification: document.getElementById("reqQualification").value.trim(), minExperience: document.getElementById("reqMinExperience").value.trim(), preferredExperience: document.getElementById("reqPreferredExperience").value.trim(), trainersRequired: parseInt(document.getElementById("reqTrainerCount").value,10) || 1, duration: document.getElementById("reqDuration").value.trim(), startDate: document.getElementById("reqStartDate").value, description: document.getElementById("reqDescription").value.trim(), additional: document.getElementById("reqAdditional").value.trim(), deadline: document.getElementById("reqDeadline").value, status: "Active", createdAt: new Date().toISOString() };
+    const requirements = getRequirements(); requirements.unshift(requirement); save(KEYS.REQUIREMENTS, requirements);
+    getUsers().filter(u => u.role === "trainer" && u.status === "approved").forEach(t => { addNotification(t.id, "New Trainer Opportunity", `${requirement.title} has been posted. Review the opportunity and apply if suitable.`, "opportunity"); });
+    form.reset(); alert("Trainer requirement posted successfully."); renderRequirementsAdmin();
+  });
+  const list = document.getElementById("adminRequirementsList");
+  if (list) list.addEventListener("click", e => {
+    const action = e.target.closest("[data-requirement-action]"); if (!action) return;
+    const id = action.dataset.id, type = action.dataset.requirementAction;
+    if (type === "delete" && confirm("Delete this trainer requirement?")) { save(KEYS.REQUIREMENTS, getRequirements().filter(r => r.id !== id)); renderRequirementsAdmin(); return; }
+    if (type === "close") { const rs=getRequirements(); const r=rs.find(x=>x.id===id); if(r){r.status="Closed";save(KEYS.REQUIREMENTS,rs);renderRequirementsAdmin();} return; }
+    if (type === "edit") { openRequirementEditModal(id); return; }
+    if (type === "applications") { openApplicationsModal(id); return; }
+    if (type === "selected") { openApplicationsModal(id, "Selected"); return; }
+  });
+}
+
+function renderRequirementsAdmin() {
+  const container = document.getElementById("adminRequirementsList"); if (!container) return;
+  const requirements = getRequirements();
+  if (!requirements.length) { container.innerHTML='<p class="empty-state">No trainer requirements posted yet. Create your first requirement above.</p>'; return; }
+  container.innerHTML = requirements.map(r => { const apps=getApplicationsForRequirement(r.id); const selected=apps.filter(a=>a.status==="Selected").length; const status=selected>=r.trainersRequired?"Filled":r.status; return `<div class="hiring-card"><div class="hiring-card-head"><div><span class="badge ${status==="Active"?"badge-success":status==="Filled"?"badge-primary":"badge-neutral"}">${status}</span><h3>${escapeHtml(r.title)}</h3></div><span class="match-pill">${selected}/${r.trainersRequired} selected</span></div><div class="hiring-meta"><span>🎯 ${escapeHtml(r.skills)}</span><span>🎓 ${escapeHtml(r.qualification)}</span><span>💼 ${escapeHtml(r.minExperience)}+ yrs</span><span>👥 ${apps.length} applications</span></div><p>${escapeHtml(r.description || "")}</p><div class="hiring-actions"><button class="btn btn-sm btn-primary" data-requirement-action="applications" data-id="${r.id}">View Applications</button><button class="btn btn-sm btn-secondary" data-requirement-action="selected" data-id="${r.id}">Selected Trainers</button><button class="btn btn-sm btn-secondary" data-requirement-action="edit" data-id="${r.id}">Edit</button>${status==="Active"?`<button class="btn btn-sm btn-warning" data-requirement-action="close" data-id="${r.id}">Close</button>`:""}<button class="btn btn-sm btn-danger" data-requirement-action="delete" data-id="${r.id}">Delete</button></div></div>`; }).join("");
+}
+
+function openRequirementEditModal(id) {
+  const r=getRequirements().find(x=>x.id===id); if(!r)return; const title=prompt("Requirement / Role Title",r.title); if(title===null)return; const skills=prompt("Required Skills",r.skills); if(skills===null)return; const desc=prompt("Description / Job Requirements",r.description||""); const rs=getRequirements(); const x=rs.find(a=>a.id===id); Object.assign(x,{title:title.trim(),skills:skills.trim(),description:desc===null?x.description:desc.trim()}); save(KEYS.REQUIREMENTS,rs); renderRequirementsAdmin();
+}
+
+function openApplicationsModal(requirementId, statusFilter = "") {
+  const r=getRequirements().find(x=>x.id===requirementId); if(!r)return; let apps=getApplicationsForRequirement(requirementId);
+  if (!statusFilter) { const all=getApplications(); let changed=false; all.forEach(a=>{if(a.requirementId===requirementId && a.status==="Submitted"){a.status="Under Review"; changed=true; addNotification(a.trainerId,"Application Under Review",`Your application for ${r.title} is now under review.`);}}); if(changed) save(KEYS.APPLICATIONS,all); }
+  apps=getApplicationsForRequirement(requirementId).filter(a => !statusFilter || a.status === statusFilter).sort((a,b)=>b.matchScore-a.matchScore); const modal=document.createElement("div"); modal.className="modal-overlay"; modal.innerHTML=`<div class="modal-card modal-xlarge"><div class="modal-head"><div><span class="badge badge-primary">${apps.length} Applications</span><h2>${escapeHtml(r.title)}</h2></div><button class="modal-close">×</button></div><div class="application-toolbar"><strong>Sort by Match Score: High → Low</strong><span>${r.trainersRequired} trainer${r.trainersRequired>1?'s':''} required</span></div><div id="adminApplicationsRows"></div></div>`; document.body.appendChild(modal); modal.querySelector(".modal-close").onclick=()=>modal.remove();
+  const rows=modal.querySelector("#adminApplicationsRows"); if(!apps.length){rows.innerHTML='<p class="empty-state">No applications received yet.</p>';return;}
+  rows.innerHTML=apps.map(a=>`<div class="candidate-card"><div class="candidate-main"><div class="candidate-avatar">${escapeHtml((a.name||"T").charAt(0).toUpperCase())}</div><div><h3>${escapeHtml(a.name)}</h3><p>${escapeHtml(a.qualification)} · ${escapeHtml(a.totalExperience)}</p><p>${escapeHtml(a.skills)}</p><small>Applied ${new Date(a.appliedAt).toLocaleDateString()} ${a.resumeName?`· Resume: ${escapeHtml(a.resumeName)}`:""}</small></div></div><div class="candidate-score"><strong>${a.matchScore}%</strong><span>Competency Match</span></div><div class="candidate-status"><span class="status-badge status-${a.status.toLowerCase().replace(/ /g,'-')}">${escapeHtml(a.status)}</span><div class="hiring-actions"><button class="btn btn-sm btn-secondary" data-candidate="profile" data-id="${a.id}">View Profile</button>${a.resumeName?`<button class="btn btn-sm btn-secondary" data-candidate="resume" data-id="${a.id}">View Resume</button>`:""}<button class="btn btn-sm btn-warning" data-candidate="shortlist" data-id="${a.id}">Shortlist</button><button class="btn btn-sm btn-danger" data-candidate="reject" data-id="${a.id}">Reject</button><button class="btn btn-sm btn-success" data-candidate="select" data-id="${a.id}">Select Trainer</button></div></div></div>`).join("");
+  rows.addEventListener("click",e=>{const b=e.target.closest("[data-candidate]");if(!b)return;const a=getApplications().find(x=>x.id===b.dataset.id);if(!a)return; if(b.dataset.candidate==="profile"){alert(`Candidate Profile\n\n${a.name}\n${a.qualification}\nSpecialization: ${a.specialization}\nExperience: ${a.totalExperience}\nRelevant Training: ${a.relevantTrainingExperience}\nSkills: ${a.skills}\nCertifications: ${a.certifications||"None"}\nPrevious Organizations: ${a.organizations||"None"}\n\n${a.summary}`);} else if(b.dataset.candidate==="resume"){ if(a.resumeData){ const w=window.open(a.resumeData,"_blank"); if(w) w.document.title=a.resumeName||"Resume"; } else alert(`Resume: ${a.resumeName || "Not available"}`); } else {updateApplicationStatus(a.id,b.dataset.candidate,r,modal);}});
+}
+
+function updateApplicationStatus(applicationId, action, requirement, modal) {
+  const applications=getApplications(); const a=applications.find(x=>x.id===applicationId); if(!a)return; let status; if(action==="shortlist")status="Shortlisted"; if(action==="reject")status="Rejected"; if(action==="select"){const selected=applications.filter(x=>x.requirementId===requirement.id&&x.status==="Selected").length;if(selected>=requirement.trainersRequired){alert("Required number of trainers has already been selected.");return;} if(!confirm("Are you sure you want to select this trainer for this requirement?"))return; status="Selected";} a.status=status; a.adminDecision=status; save(KEYS.APPLICATIONS,applications); addNotification(a.trainerId, status==="Selected"?"Application Selected":status==="Rejected"?"Application Rejected":"Application Shortlisted", status==="Selected"?`You have been selected for the ${requirement.title} role.`:status==="Rejected"?`Your application for ${requirement.title} was rejected.`:`You have been shortlisted for the ${requirement.title} role.`, "application"); if(status==="Selected"){const selected=applications.filter(x=>x.requirementId===requirement.id&&x.status==="Selected").length;if(selected>=requirement.trainersRequired){const rs=getRequirements();const r=rs.find(x=>x.id===requirement.id);if(r){r.status="Closed";r.filled=true;save(KEYS.REQUIREMENTS,rs);}}} modal.remove(); renderRequirementsAdmin(); setTimeout(()=>openApplicationsModal(requirement.id),0);}
 
 function refreshAdminStats() {
   const users = getUsers();
@@ -879,6 +1067,63 @@ function renderAdminUsers() {
   });
 }
 
+
+/* ---------- Trainee feedback ---------- */
+function initFeedback() {
+  const user = getCurrentUser();
+  if (!user || user.role !== "trainee") {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const form = document.getElementById("feedbackForm");
+  const success = document.getElementById("feedbackSuccess");
+  const error = document.getElementById("feedbackError");
+  if (!form) return;
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    error.textContent = "";
+    error.classList.remove("show");
+    success.classList.remove("show");
+
+    const type = form.querySelector('input[name="feedbackType"]:checked')?.value;
+    const subject = form.elements.subject.value.trim();
+    const course = form.elements.course.value.trim();
+    const details = form.elements.details.value.trim();
+
+    if (!type || !subject || !details) {
+      error.textContent = "Please select a category and complete the required fields.";
+      error.classList.add("show");
+      return;
+    }
+
+    if (details.length < 10) {
+      error.textContent = "Please provide at least 10 characters in the details field.";
+      error.classList.add("show");
+      return;
+    }
+
+    const submissions = load("cc_feedback", []);
+    submissions.unshift({
+      id: uid(),
+      userId: user.id,
+      userName: user.name,
+      type,
+      subject,
+      course,
+      details,
+      createdAt: new Date().toISOString()
+    });
+    save("cc_feedback", submissions);
+
+    form.reset();
+    form.querySelector('input[name="feedbackType"][value="technical"]').checked = true;
+    success.classList.add("show");
+    success.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+}
+
 /* ============================================================
    PAGE INITIALIZER
    ============================================================ */
@@ -894,5 +1139,6 @@ document.addEventListener("DOMContentLoaded", () => {
     case "courses": initCoursesPage(); break;
     case "course-details": initCourseDetails(); break;
     case "assessment": initAssessment(); break;
+    case "feedback": initFeedback(); break;
   }
 });
