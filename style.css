@@ -2106,3 +2106,40 @@ textarea:focus,
 @media (max-width: 900px) {
   .sidebar { background: #0a2740; }
 }
+
+
+/* ============================================================
+   FEEDBACK LOOP / OFFLINE TICKETING
+   ============================================================ */
+.faq-explore-btn { background:#123a5a !important; color:#fff !important; box-shadow:0 5px 14px rgba(15,48,75,.18); border-color:#123a5a !important; }
+.faq-explore-btn:hover { background:#0e2f49 !important; }
+.team-grid-sees { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.team-card-wide { min-height:100%; }
+.team-role { display:inline-block; margin:.25rem 0 .55rem; font-size:.72rem; font-weight:800; letter-spacing:.08em; color:#0f766e; }
+.ministry-card-highlight { border-left:4px solid #d97706; }
+.feedback-routing-note { margin-top:.85rem; padding:.8rem 1rem; border:1px solid #cbd5e1; border-left:4px solid #0f766e; border-radius:8px; background:#f8fafc; color:#334155; }
+.feedback-routing-note strong { color:#123a5a; }
+.tickets-card { margin-top:1.25rem; }
+.ticket-list { display:grid; gap:.85rem; }
+.ticket-card { background:#fff; border:1px solid #dbe3ea; border-radius:12px; padding:1rem 1.1rem; box-shadow:0 3px 12px rgba(15,23,42,.045); }
+.ticket-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+.ticket-card h3 { margin:.25rem 0 0; color:#17324d; }
+.ticket-id { font-size:.72rem; font-weight:800; letter-spacing:.05em; color:#64748b; }
+.ticket-meta { display:flex; flex-wrap:wrap; gap:.45rem; margin:.75rem 0; }
+.ticket-meta span { font-size:.76rem; padding:.3rem .55rem; border-radius:999px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; }
+.ticket-details { color:#475569; line-height:1.55; white-space:pre-wrap; }
+.ticket-reply { margin-top:.8rem; padding:.8rem .9rem; border-left:3px solid #0f766e; background:#f0fdfa; border-radius:0 8px 8px 0; }
+.ticket-reply strong { color:#115e59; }
+.ticket-reply p { margin:.3rem 0; color:#334155; white-space:pre-wrap; }
+.ticket-reply small { color:#64748b; }
+.ticket-awaiting { margin-top:.8rem; padding:.65rem .8rem; background:#fffbeb; color:#92400e; border-radius:8px; font-size:.85rem; }
+.ticket-reply-form { margin-top:.8rem; padding-top:.8rem; border-top:1px solid #e2e8f0; }
+.ticket-reply-form label { display:block; font-weight:700; margin-bottom:.4rem; }
+.ticket-reply-form textarea { width:100%; box-sizing:border-box; }
+.ticket-reply-actions { display:flex; justify-content:flex-end; margin-top:.55rem; }
+.ticket-empty { padding:1.1rem; border:1px dashed #cbd5e1; border-radius:10px; color:#64748b; background:#f8fafc; text-align:center; }
+.status-open { background:#eff6ff; color:#1d4ed8; }
+.status-resolved { background:#f0fdf4; color:#15803d; }
+.ticket-resolved { opacity:.9; }
+@media(max-width:900px){ .team-grid-sees { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:620px){ .team-grid-sees { grid-template-columns:1fr; } .ticket-card-head { flex-direction:column; } }

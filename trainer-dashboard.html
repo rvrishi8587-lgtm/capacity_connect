@@ -23,6 +23,7 @@
         <a href="trainer-dashboard.html#createAssessment"><span class="nav-icon">📝</span> Create Assessment</a>
         <a href="trainer-dashboard.html#trainerOpportunities"><span class="nav-icon">🎯</span> Trainer Opportunities</a>
         <a href="trainer-dashboard.html#myApplications"><span class="nav-icon">📋</span> My Applications</a>
+        <a href="trainer-dashboard.html#feedbackInbox"><span class="nav-icon">💬</span> Feedback Inbox</a>
         <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
       </nav>
     </aside>
@@ -60,6 +61,12 @@
           <div class="stat-value" id="statAvgScore">0%</div>
           <div class="stat-label">Avg Student Score</div>
         </div>
+      </div>
+
+      <!-- Feedback Inbox -->
+      <div class="section" id="feedbackInbox">
+        <div class="section-header"><div><span class="section-eyebrow">TRAINEE SUPPORT</span><h2>Feedback Inbox</h2><p class="section-subtitle">Academic and course/trainer tickets routed to the Trainer.</p></div><div class="mini-stat">Open <strong id="trainerTicketCount">0</strong></div></div>
+        <div id="trainerFeedbackInbox" class="ticket-list"></div>
       </div>
 
       <!-- Trainer Hiring -->

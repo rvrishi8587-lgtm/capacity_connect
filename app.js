@@ -16,6 +16,7 @@ const KEYS = {
   REQUIREMENTS: "cc_trainer_requirements",
   APPLICATIONS: "cc_trainer_applications",
   NOTIFICATIONS: "cc_notifications",
+  TICKETS: "cc_feedback_tickets",
 };
 
 /* ---------- Generic helpers ---------- */
@@ -180,6 +181,7 @@ function seedData() {
   if (!load(KEYS.REQUIREMENTS, null)) save(KEYS.REQUIREMENTS, []);
   if (!load(KEYS.APPLICATIONS, null)) save(KEYS.APPLICATIONS, []);
   if (!load(KEYS.NOTIFICATIONS, null)) save(KEYS.NOTIFICATIONS, []);
+  if (!load(KEYS.TICKETS, null)) save(KEYS.TICKETS, []);
 }
 
 /* ---------- Auth helpers ---------- */
@@ -779,6 +781,7 @@ function initTrainerDashboard() {
   populateMcqCourseDropdown(user);
   initTrainerHiring(user);
   refreshTrainerHiringStats(user);
+  renderFeedbackInbox("trainer");
 }
 
 function initTrainerHiring(user) {
@@ -970,6 +973,7 @@ function initAdminDashboard() {
   refreshAdminStats();
   renderAdminUsers();
   initAdminHiring(user);
+  renderFeedbackInbox("admin");
 }
 
 function initAdminHiring(user) {
@@ -1068,62 +1072,114 @@ function renderAdminUsers() {
 }
 
 
-/* ---------- Trainee feedback ---------- */
+/* ---------- Feedback ticketing (offline demo loop) ---------- */
+function getTickets() { return load(KEYS.TICKETS, []); }
+function saveTickets(tickets) { save(KEYS.TICKETS, tickets); }
+function ticketRoute(category) { return category === "technical" ? "admin" : "trainer"; }
+function ticketCategoryLabel(category) {
+  return ({ technical: "Technical Error", academic: "Academic Issue", course: "Course / Trainer Feedback" })[category] || "Feedback";
+}
+function ticketStatusClass(status) {
+  return ({ Open: "status-open", "In Review": "status-under-review", Resolved: "status-resolved" })[status] || "status-open";
+}
+function createTicket({ user, category, subject, course, details }) {
+  const routeRole = ticketRoute(category);
+  const ticket = {
+    id: `CC-${new Date().getFullYear()}-${uid().toUpperCase()}`,
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    category,
+    categoryLabel: ticketCategoryLabel(category),
+    subject,
+    course,
+    details,
+    routeRole,
+    status: "Open",
+    reply: "",
+    repliedBy: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const tickets = getTickets();
+  tickets.unshift(ticket);
+  saveTickets(tickets);
+  const recipients = getUsers().filter(u => u.role === routeRole && u.status === "approved");
+  recipients.forEach(recipient => addNotification(recipient.id, "New Feedback Ticket", `${ticket.categoryLabel}: ${ticket.subject}`, "feedback"));
+  return ticket;
+}
+function replyToTicket(ticketId, user, reply) {
+  const tickets = getTickets();
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket || ticket.routeRole !== user.role) return false;
+  ticket.reply = reply;
+  ticket.repliedBy = user.name;
+  ticket.status = "Resolved";
+  ticket.updatedAt = new Date().toISOString();
+  saveTickets(tickets);
+  addNotification(ticket.userId, "Feedback Ticket Updated", `Your ticket ${ticket.id} has received a reply.`, "feedback");
+  return true;
+}
+function renderMyTickets(user) {
+  const container = document.getElementById("myTicketsList");
+  if (!container) return;
+  const tickets = getTickets().filter(t => t.userId === user.id).sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
+  if (!tickets.length) { container.innerHTML = '<div class="ticket-empty">You have not submitted any support tickets yet.</div>'; return; }
+  container.innerHTML = tickets.map(t => `
+    <article class="ticket-card">
+      <div class="ticket-card-head"><div><span class="ticket-id">${escapeHtml(t.id)}</span><h3>${escapeHtml(t.subject)}</h3></div><span class="status-badge ${ticketStatusClass(t.status)}">${escapeHtml(t.status)}</span></div>
+      <div class="ticket-meta"><span>${escapeHtml(t.categoryLabel)}</span><span>Routed to ${escapeHtml(t.routeRole === "admin" ? "Admin" : "Trainer")}</span>${t.course ? `<span>${escapeHtml(t.course)}</span>` : ""}<span>${new Date(t.createdAt).toLocaleString()}</span></div>
+      <p class="ticket-details">${escapeHtml(t.details)}</p>
+      ${t.reply ? `<div class="ticket-reply"><strong>Reply from ${escapeHtml(t.repliedBy || (t.routeRole === "admin" ? "Admin" : "Trainer"))}</strong><p>${escapeHtml(t.reply)}</p><small>Updated ${new Date(t.updatedAt).toLocaleString()}</small></div>` : `<div class="ticket-awaiting">Awaiting response from ${t.routeRole === "admin" ? "Admin" : "Trainer"}.</div>`}
+    </article>`).join("");
+}
+function renderFeedbackInbox(role) {
+  const container = document.getElementById(`${role}FeedbackInbox`);
+  const countEl = document.getElementById(`${role}TicketCount`);
+  if (!container) return;
+  const tickets = getTickets().filter(t => t.routeRole === role).sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
+  const openCount = tickets.filter(t => t.status !== "Resolved").length;
+  if (countEl) countEl.textContent = openCount;
+  if (!tickets.length) { container.innerHTML = '<div class="ticket-empty">No tickets are currently routed to you.</div>'; return; }
+  container.innerHTML = tickets.map(t => `
+    <article class="ticket-card inbox-ticket ${t.status === "Resolved" ? "ticket-resolved" : ""}">
+      <div class="ticket-card-head"><div><span class="ticket-id">${escapeHtml(t.id)}</span><h3>${escapeHtml(t.subject)}</h3></div><span class="status-badge ${ticketStatusClass(t.status)}">${escapeHtml(t.status)}</span></div>
+      <div class="ticket-meta"><span>${escapeHtml(t.categoryLabel)}</span><span>From ${escapeHtml(t.userName)}</span>${t.course ? `<span>${escapeHtml(t.course)}</span>` : ""}<span>${new Date(t.createdAt).toLocaleString()}</span></div>
+      <p class="ticket-details">${escapeHtml(t.details)}</p>
+      ${t.reply ? `<div class="ticket-reply"><strong>Your reply</strong><p>${escapeHtml(t.reply)}</p></div>` : `<form class="ticket-reply-form" data-ticket-form="${escapeHtml(t.id)}"><label for="reply-${escapeHtml(t.id)}">Reply to trainee</label><textarea id="reply-${escapeHtml(t.id)}" name="reply" rows="3" maxlength="500" placeholder="e.g. This issue will be resolved." required></textarea><div class="ticket-reply-actions"><button class="btn btn-sm btn-primary" type="submit">Send Reply & Resolve</button></div></form>`}
+    </article>`).join("");
+  container.querySelectorAll("[data-ticket-form]").forEach(form => form.addEventListener("submit", e => {
+    e.preventDefault();
+    const ticketId = form.dataset.ticketForm;
+    const reply = form.elements.reply.value.trim();
+    if (reply.length < 3) { alert("Please enter a reply before submitting."); return; }
+    const user = getCurrentUser();
+    if (replyToTicket(ticketId, user, reply)) { renderFeedbackInbox(role); renderNotifications(user, document.getElementById(`${role}Notifications`)); }
+  }));
+}
 function initFeedback() {
-  const user = getCurrentUser();
-  if (!user || user.role !== "trainee") {
-    window.location.href = "login.html";
-    return;
-  }
-
+  const user = requireRole("trainee");
+  if (!user) return;
   const form = document.getElementById("feedbackForm");
   const success = document.getElementById("feedbackSuccess");
   const error = document.getElementById("feedbackError");
+  const typeSelect = document.getElementById("feedbackType");
+  const routingText = document.getElementById("routingText");
   if (!form) return;
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    error.textContent = "";
-    error.classList.remove("show");
-    success.classList.remove("show");
-
-    const type = form.querySelector('input[name="feedbackType"]:checked')?.value;
-    const subject = form.elements.subject.value.trim();
-    const course = form.elements.course.value.trim();
-    const details = form.elements.details.value.trim();
-
-    if (!type || !subject || !details) {
-      error.textContent = "Please select a category and complete the required fields.";
-      error.classList.add("show");
-      return;
-    }
-
-    if (details.length < 10) {
-      error.textContent = "Please provide at least 10 characters in the details field.";
-      error.classList.add("show");
-      return;
-    }
-
-    const submissions = load("cc_feedback", []);
-    submissions.unshift({
-      id: uid(),
-      userId: user.id,
-      userName: user.name,
-      type,
-      subject,
-      course,
-      details,
-      createdAt: new Date().toISOString()
-    });
-    save("cc_feedback", submissions);
-
-    form.reset();
-    form.querySelector('input[name="feedbackType"][value="technical"]').checked = true;
-    success.classList.add("show");
-    success.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const updateRouting = () => { if (routingText) routingText.textContent = ticketRoute(typeSelect.value) === "admin" ? "This ticket will be sent to an Administrator." : "This ticket will be sent to a Trainer."; };
+  typeSelect?.addEventListener("change", updateRouting); updateRouting();
+  renderMyTickets(user);
+  document.getElementById("refreshTicketsBtn")?.addEventListener("click", () => renderMyTickets(user));
+  form.addEventListener("submit", event => {
+    event.preventDefault(); error.textContent = ""; error.classList.remove("show"); success.classList.remove("show");
+    const category = typeSelect.value;
+    const subject = form.elements.subject.value.trim(); const course = form.elements.course.value.trim(); const details = form.elements.details.value.trim();
+    if (!category || !subject || !details) { error.textContent = "Please select a category and complete the required fields."; error.classList.add("show"); return; }
+    if (details.length < 10) { error.textContent = "Please provide at least 10 characters in the details field."; error.classList.add("show"); return; }
+    const ticket = createTicket({ user, category, subject, course, details });
+    form.reset(); typeSelect.value = "technical"; updateRouting(); success.querySelector("strong").textContent = `Ticket ${ticket.id} submitted successfully.`; success.classList.add("show"); renderMyTickets(user); success.scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
 }
-
 /* ============================================================
    PAGE INITIALIZER
    ============================================================ */

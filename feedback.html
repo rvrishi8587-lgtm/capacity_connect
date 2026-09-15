@@ -1,95 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capacity Connect — Trainee Feedback</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Capacity Connect — Feedback & Support</title><link rel="stylesheet" href="style.css"></head>
 <body class="official-page feedback-page" data-page="feedback">
-  <div class="gov-strip">
-    <div class="official-container gov-strip-inner">
-      <span>Government of India • Capacity Building & Training Initiative</span>
-      <span class="gov-strip-right">Trainee Support</span>
+  <div class="gov-strip"><div class="official-container gov-strip-inner"><span>Government of India • Capacity Building & Training Initiative</span><span class="gov-strip-right">Trainee Support</span></div></div>
+  <header class="official-header"><div class="official-container official-header-inner"><a href="trainee-dashboard.html" class="official-brand"><div class="official-emblem">CC</div><div><div class="official-brand-title">CAPACITY CONNECT</div><div class="official-brand-subtitle">Trainee Support & Feedback</div></div></a><div class="agency-logos"><div class="agency-mark"><span>MoES</span><small>Ministry of Earth Sciences</small></div><div class="agency-divider"></div><div class="agency-mark"><span>IMD</span><small>India Meteorological Department</small></div></div><a href="trainee-dashboard.html" class="btn btn-official-login">Back to Dashboard</a></div></header>
+  <main><section class="feedback-shell"><div class="official-container feedback-container">
+    <div class="feedback-intro"><span class="section-eyebrow">TRAINEE SUPPORT</span><h1>Feedback & Issue Reporting</h1><p>Submit a support ticket and follow its status from the same page. Technical issues are routed to Admin; academic and course/trainer matters are routed to Trainer.</p></div>
+    <div class="feedback-card"><div id="feedbackSuccess" class="feedback-success" role="status" aria-live="polite"><strong>Ticket submitted successfully.</strong><span>Your ticket has been routed to the appropriate role.</span></div><div id="feedbackError" class="feedback-form-error" role="alert"></div>
+      <form id="feedbackForm" novalidate>
+        <div class="feedback-form-grid"><div class="form-group"><label for="feedbackType">Category <span>*</span></label><select id="feedbackType" name="feedbackType" required><option value="technical">Technical Error — Admin</option><option value="academic">Academic Issue — Trainer</option><option value="course">Course / Trainer Feedback — Trainer</option></select></div><div class="form-group"><label for="feedbackCourse">Course (optional)</label><input id="feedbackCourse" name="course" type="text" maxlength="100" placeholder="e.g. Python Basics"></div></div>
+        <div class="form-group"><label for="feedbackSubject">Subject <span>*</span></label><input id="feedbackSubject" name="subject" type="text" maxlength="100" placeholder="Briefly describe the issue or feedback" required></div>
+        <div class="form-group"><label for="feedbackDetails">Details <span>*</span></label><textarea id="feedbackDetails" name="details" rows="7" maxlength="1000" placeholder="Describe what happened, where you noticed it, and any useful context..." required></textarea><small class="field-hint">Minimum 10 characters. Maximum 1000 characters.</small></div>
+        <div class="feedback-routing-note"><strong id="routingLabel">Routing:</strong> <span id="routingText">This ticket will be sent to an Administrator.</span></div>
+        <div class="feedback-submit-row"><a href="trainee-dashboard.html" class="btn btn-secondary">Cancel</a><button type="submit" class="btn btn-official-primary">Submit Ticket</button></div>
+      </form>
     </div>
-  </div>
-  <header class="official-header">
-    <div class="official-container official-header-inner">
-      <a href="trainee-dashboard.html" class="official-brand">
-        <div class="official-emblem" aria-hidden="true">CC</div>
-        <div><div class="official-brand-title">CAPACITY CONNECT</div><div class="official-brand-subtitle">Trainee Support & Feedback</div></div>
-      </a>
-      <div class="agency-logos">
-        <div class="agency-mark"><span>MoES</span><small>Ministry of Earth Sciences</small></div>
-        <div class="agency-divider"></div>
-        <div class="agency-mark"><span>IMD</span><small>India Meteorological Department</small></div>
-      </div>
-      <a href="trainee-dashboard.html" class="btn btn-official-login">Back to Dashboard</a>
-    </div>
-  </header>
-
-  <main>
-    <section class="feedback-shell">
-      <div class="official-container feedback-container">
-        <div class="feedback-intro">
-          <span class="section-eyebrow">TRAINEE SUPPORT</span>
-          <h1>Feedback & Issue Reporting</h1>
-          <p>Help us improve Capacity Connect. Select a category and provide enough detail for the issue or feedback to be reviewed.</p>
-        </div>
-
-        <div class="feedback-card">
-          <div id="feedbackSuccess" class="feedback-success" role="status" aria-live="polite">
-            <strong>Feedback submitted successfully.</strong>
-            <span>Your response has been recorded for this prototype.</span>
-          </div>
-          <div id="feedbackError" class="feedback-form-error" role="alert"></div>
-
-          <form id="feedbackForm" novalidate>
-            <div class="feedback-category-grid">
-              <label class="feedback-category">
-                <input type="radio" name="feedbackType" value="technical" checked>
-                <span><strong>Report Technical Issue</strong><small>Login, page errors, broken features or access problems.</small></span>
-              </label>
-              <label class="feedback-category">
-                <input type="radio" name="feedbackType" value="academic">
-                <span><strong>Report Academic Error</strong><small>Incorrect content, question, answer or course information.</small></span>
-              </label>
-              <label class="feedback-category">
-                <input type="radio" name="feedbackType" value="course">
-                <span><strong>Course/Trainer Feedback</strong><small>Share constructive feedback about a course or trainer.</small></span>
-              </label>
-            </div>
-
-            <div class="feedback-form-grid">
-              <div class="form-group">
-                <label for="feedbackSubject">Subject <span>*</span></label>
-                <input id="feedbackSubject" name="subject" type="text" maxlength="100" placeholder="Briefly describe the issue or feedback" required>
-              </div>
-              <div class="form-group">
-                <label for="feedbackCourse">Course (optional)</label>
-                <input id="feedbackCourse" name="course" type="text" maxlength="100" placeholder="e.g. Python Basics">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="feedbackDetails">Details <span>*</span></label>
-              <textarea id="feedbackDetails" name="details" rows="7" maxlength="1000" placeholder="Please describe what happened, where you noticed it, and any useful context..." required></textarea>
-              <small class="field-hint">Minimum 10 characters. Maximum 1000 characters.</small>
-            </div>
-
-            <div class="feedback-submit-row">
-              <a href="trainee-dashboard.html" class="btn btn-secondary">Cancel</a>
-              <button type="submit" class="btn btn-official-primary">Submit Feedback</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="feedback-note">
-          <strong>Prototype note:</strong> submissions are stored locally in this browser using frontend state. A backend API can replace this flow later without changing the form UX.
-        </div>
-      </div>
-    </section>
-  </main>
-  <script src="app.js"></script>
-</body>
-</html>
+    <div class="feedback-card tickets-card"><div class="section-header"><div><span class="section-eyebrow">MY TICKETS</span><h2>Ticket Status & Replies</h2></div><button type="button" class="btn btn-secondary btn-sm" id="refreshTicketsBtn">Refresh</button></div><div id="myTicketsList" class="ticket-list"></div></div>
+    <div class="feedback-note"><strong>Offline demo:</strong> tickets, replies and notification states are stored in this browser using localStorage. No backend connection is required for the SIH demonstration.</div>
+  </div></section></main><script src="app.js"></script>
+</body></html>

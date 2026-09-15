@@ -22,6 +22,7 @@
         <a href="admin-dashboard.html#courses"><span class="nav-icon">📖</span> Courses</a>
         <a href="admin-dashboard.html#trainerRequirements"><span class="nav-icon">👨‍🏫</span> Trainer Requirements</a>
         <a href="admin-dashboard.html#analytics"><span class="nav-icon">📊</span> Analytics</a>
+        <a href="admin-dashboard.html#feedbackInbox"><span class="nav-icon">💬</span> Feedback Inbox</a>
         <a href="#" onclick="logout()"><span class="nav-icon">🚪</span> Logout</a>
       </nav>
     </aside>
@@ -64,6 +65,12 @@
           <div class="stat-value" id="statEnrollments">0</div>
           <div class="stat-label">Total Enrollments</div>
         </div>
+      </div>
+
+      <!-- Feedback Inbox -->
+      <div class="section" id="feedbackInbox">
+        <div class="section-header"><div><span class="section-eyebrow">TRAINEE SUPPORT</span><h2>Feedback Inbox</h2><p class="section-subtitle">Technical issue tickets routed to the Administrator.</p></div><div class="mini-stat">Open <strong id="adminTicketCount">0</strong></div></div>
+        <div id="adminFeedbackInbox" class="ticket-list"></div>
       </div>
 
       <!-- Trainer Requirements -->
